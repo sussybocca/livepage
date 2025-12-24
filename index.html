@@ -68,8 +68,17 @@
     <option value="business">Business</option>
   </select>
 
+  <label>Category</label>
+  <select id="category">
+    <option value="family">Family Friendly</option>
+    <option value="18+">18+</option>
+  </select>
+
   <label>Content</label>
   <textarea id="content" placeholder="Write your page content here…"></textarea>
+
+  <label>Image URL (optional)</label>
+  <input id="imageUrl" placeholder="https://example.com/image.jpg" />
 
   <div class="preview" id="slugPreview">URL: /l/</div>
   <div class="status" id="status"></div>
@@ -93,11 +102,24 @@ function updateSlug() {
     "URL: /l/" + generateSlug(title);
 }
 
+// Dummy function for getting Google OAuth code; replace with real popup / redirect flow
+async function getGoogleOAuthCode() {
+  // You would normally open a popup or redirect to Google's OAuth consent screen here
+  // For demo purposes, returning null for family-friendly category
+  const category = document.getElementById("category").value;
+  if (category === "18+") {
+    return prompt("Enter Google OAuth code for age verification (demo only)");
+  }
+  return null;
+}
+
 async function createPage() {
   const title = document.getElementById("title").value.trim();
   const contentType = document.getElementById("contentType").value;
   const usageType = document.getElementById("usageType").value;
+  const category = document.getElementById("category").value;
   const content = document.getElementById("content").value.trim();
+  const imageUrl = document.getElementById("imageUrl").value.trim();
   const slug = generateSlug(title);
 
   const status = document.getElementById("status");
@@ -119,10 +141,12 @@ async function createPage() {
   btn.textContent = "Creating…";
 
   try {
+    const googleToken = await getGoogleOAuthCode();
+
     const res = await fetch("/.netlify/functions/createPage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, contentType, usageType, content })
+      body: JSON.stringify({ title, contentType, usageType, category, content, imageUrl, googleToken })
     });
 
     const raw = await res.text();
