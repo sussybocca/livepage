@@ -2,3 +2,4 @@
   from = "/l/*"
   to = "/.netlify/functions/getPage?slug=:splat"
   status = 200
+  force = true
