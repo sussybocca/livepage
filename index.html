@@ -44,6 +44,16 @@
     .actions { margin-top: 16px; display: flex; gap: 8px; flex-direction: column; }
     .actions button { background: #6bff95; color: #000; }
     .actions button.view { background: #4f7cff; color: #fff; }
+    .explore-link {
+      margin-top: 16px;
+      text-align: center;
+    }
+    .explore-link a {
+      color: #4f7cff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 <body>
@@ -85,6 +95,11 @@
   <div class="actions" id="actions" style="display:none;"></div>
 
   <button id="createBtn" onclick="createPage()">Create Page</button>
+
+  <!-- Explore link -->
+  <div class="explore-link">
+    <a href="/explore.html">Explore other pages & posts →</a>
+  </div>
 </div>
 
 <script>
@@ -102,7 +117,6 @@ function updateSlug() {
     "URL: /l/" + generateSlug(title);
 }
 
-// Replace dummy OAuth; now user enters Google email, checked by backend
 async function getGoogleEmail() {
   const category = document.getElementById("category").value;
   if (category === "18+") {
@@ -179,7 +193,6 @@ async function createPage() {
     status.textContent = "Page created successfully!";
     status.classList.add("success");
 
-    // Show actions: Edit in editor or view page
     actions.style.display = "flex";
     const editBtn = document.createElement("button");
     editBtn.textContent = "Edit in editor.html";
