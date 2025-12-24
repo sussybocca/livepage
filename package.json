@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.30.0",
-    "node-fetch": "^2.6.12"
+    "node-fetch": "^2.6.12",
     "cookie": "^0.5.0"
   },
   "devDependencies": {},
