@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LivePage Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f1115;
+      color: white;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      resize: none;
+      background: #161a22;
+      color: white;
+      font-size: 1rem;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #4f7cff;
+      color: white;
+      cursor: pointer;
+    }
+    .count {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Create a Post</h2>
+
+<textarea id="postText" maxlength="500"
+  placeholder="Write something..."></textarea>
+
+<div class="count" id="count">0 / 500</div>
+
+<button id="saveBtn" onclick="savePost()" disabled>Save</button>
+
+<script>
+const textarea = document.getElementById("postText");
+const count = document.getElementById("count");
+const btn = document.getElementById("saveBtn");
+
+textarea.addEventListener("input", () => {
+  count.textContent = `${textarea.value.length} / 500`;
+  btn.disabled = textarea.value.trim().length === 0;
+});
+
+async function savePost() {
+  const slug = new URLSearchParams(window.location.search).get("slug");
+  const content = textarea.value.trim();
+
+  await fetch("/.netlify/functions/savePost", {
+    method: "POST",
+    body: JSON.stringify({ slug, content })
+  });
+
+  textarea.value = "";
+  count.textContent = "0 / 500";
+  btn.disabled = true;
+
+  alert("Post saved!");
+}
+</script>
+
+</body>
+</html>
