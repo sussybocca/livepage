@@ -37,7 +37,7 @@
     button { background: #4f7cff; color: white; cursor: pointer; margin-top: 20px; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
     .preview { margin-top: 12px; font-size: 0.85rem; color: #9aa4ff; word-break: break-all; }
-    .status { margin-top: 10px; font-size: 0.85rem; min-height: 1em; }
+    .status { margin-top: 10px; font-size: 0.85rem; white-space: pre-wrap; }
     .error { color: #ff6b6b; }
     .success { color: #6bff95; }
   </style>
@@ -72,11 +72,7 @@
 
 <script>
 function generateSlug(title) {
-  const clean = title
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, "")
-    .trim();
-
+  const clean = title.toLowerCase().replace(/[^a-z0-9 ]+/g, "").trim();
   const spaces = (clean.match(/ /g) || []).length;
   if (spaces === 0) return clean;
   if (spaces === 1) return clean.replace(" ", "-");
@@ -85,9 +81,8 @@ function generateSlug(title) {
 
 function updateSlug() {
   const title = document.getElementById("title").value;
-  const slug = generateSlug(title);
   document.getElementById("slugPreview").innerText =
-    "URL: /l/" + (slug || "");
+    "URL: /l/" + generateSlug(title);
 }
 
 async function createPage() {
@@ -115,36 +110,42 @@ async function createPage() {
     const res = await fetch("/.netlify/functions/createPage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        slug,
-        contentType,
-        usageType
-      })
+      body: JSON.stringify({ title, contentType, usageType })
     });
 
-    const text = await res.text();
-    let data;
+    const raw = await res.text();
 
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid server response: " + text);
+    // 🔥 ALWAYS SHOW REAL ERROR — NO UNKNOWN ERROR POSSIBLE
+    if (!res.ok) {
+      status.textContent =
+        "SERVER ERROR (" + res.status + "):\n\n" + raw;
+      status.classList.add("error");
+      btn.disabled = false;
+      btn.textContent = "Create Page";
+      return;
     }
 
-    if (!res.ok) {
-      throw new Error(data.error || data.message || "Unknown error");
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      status.textContent =
+        "INVALID JSON FROM SERVER:\n\n" + raw;
+      status.classList.add("error");
+      btn.disabled = false;
+      btn.textContent = "Create Page";
+      return;
     }
 
     status.textContent = "Page created! Redirecting to editor…";
     status.classList.add("success");
 
-    // ✅ FIXED REDIRECT — editor.html now actually works
     window.location.href =
-      "/editor.html?slug=" + encodeURIComponent(slug);
+      "/editor.html?slug=" + encodeURIComponent(data.page.slug);
 
   } catch (err) {
-    status.textContent = "Error creating page: " + err.message;
+    status.textContent =
+      "FETCH FAILED:\n\n" + err.message;
     status.classList.add("error");
     btn.disabled = false;
     btn.textContent = "Create Page";
