@@ -58,37 +58,49 @@ async function moderateImage(imageUrl, category) {
   return true;
 }
 
-// Google Age Verification via OAuth token
-async function verifyGoogleAge(googleToken) {
-  if (!googleToken) return false;
+// Google Age Verification via OAuth code
+async function verifyGoogleAge(oauthCode, redirectUri) {
+  if (!oauthCode) return false;
 
-  // People API call
+  // Exchange code for access token using Netlify secrets
+  const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code: oauthCode,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code"
+    })
+  });
+
+  if (!tokenResp.ok) return false;
+
+  const tokenData = await tokenResp.json();
+  const accessToken = tokenData.access_token;
+  if (!accessToken) return false;
+
+  // Call People API to get birthday
   const resp = await fetch(
-    `https://people.googleapis.com/v1/people/me?personFields=birthdays`,
-    {
-      headers: {
-        "Authorization": `Bearer ${googleToken}`
-      }
-    }
+    "https://people.googleapis.com/v1/people/me?personFields=birthdays",
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
 
   if (!resp.ok) return false;
-
   const data = await resp.json();
   if (!data.birthdays || !data.birthdays[0].date) return false;
 
   const birth = data.birthdays[0].date;
   const birthDate = new Date(birth.year, birth.month - 1, birth.day);
-  const ageDifMs = Date.now() - birthDate.getTime();
-  const ageDate = new Date(ageDifMs);
-  const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+  const age = Math.floor((Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
 
   return age >= 18;
 }
 
 export async function handler(event) {
   try {
-    const { contentType, usageType, content, category, googleToken, imageUrl } = JSON.parse(event.body);
+    const { contentType, usageType, content, category, googleCode, redirectUri, imageUrl } = JSON.parse(event.body);
 
     if (!contentType || !usageType || !content || !category) {
       return {
@@ -100,7 +112,7 @@ export async function handler(event) {
     // Verify age if 18+
     let ageVerified = false;
     if (category === "18+") {
-      ageVerified = await verifyGoogleAge(googleToken);
+      ageVerified = await verifyGoogleAge(googleCode, redirectUri);
       if (!ageVerified) {
         return {
           statusCode: 403,
