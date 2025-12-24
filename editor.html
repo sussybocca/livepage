@@ -73,7 +73,9 @@
 <div id="posts"></div>
 
 <script>
-const slug = new URLSearchParams(window.location.search).get("slug");
+const params = new URLSearchParams(window.location.search);
+const slug = params.get("slug");
+
 const textarea = document.getElementById("postText");
 const count = document.getElementById("count");
 const btn = document.getElementById("saveBtn");
@@ -81,33 +83,73 @@ const postsDiv = document.getElementById("posts");
 const pageTitle = document.getElementById("pageTitle");
 const viewLink = document.getElementById("viewLink");
 
-// Enable/disable save button based on input
+// NEW: editable page content
+const pageContentBox = document.createElement("textarea");
+pageContentBox.placeholder = "Edit page content...";
+pageContentBox.style.height = "160px";
+pageContentBox.style.marginTop = "16px";
+document.body.insertBefore(pageContentBox, document.getElementById("posts"));
+
+const savePageBtn = document.createElement("button");
+savePageBtn.textContent = "Save page changes";
+document.body.insertBefore(savePageBtn, document.getElementById("posts"));
+
+savePageBtn.onclick = savePage;
+
+// Enable/disable post save button
 textarea.addEventListener("input", () => {
   count.textContent = `${textarea.value.length} / 500`;
   btn.disabled = textarea.value.trim().length === 0;
 });
 
-// Load page metadata and posts
+// Load page data + posts
 async function loadPage() {
   if (!slug) return alert("No page slug provided!");
 
-  // Fetch page info
   const pageRes = await fetch(`/.netlify/functions/getPage?slug=${slug}`);
   if (!pageRes.ok) return alert("Failed to load page.");
+
   const pageData = await pageRes.json();
+
   pageTitle.textContent = pageData.page.title;
+  pageContentBox.value = pageData.page.content;
   viewLink.href = `/l/${slug}`;
 
-  // Load existing posts
   await loadPosts();
 }
 
-// Load existing posts from getPosts.js
+// Save page content updates
+async function savePage() {
+  savePageBtn.textContent = "Saving…";
+
+  const res = await fetch("/.netlify/functions/updatePage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      slug,
+      title: pageTitle.textContent,
+      content: pageContentBox.value
+    })
+  });
+
+  if (!res.ok) {
+    alert("Failed to update page.");
+    savePageBtn.textContent = "Save page changes";
+    return;
+  }
+
+  savePageBtn.textContent = "Saved ✓";
+  setTimeout(() => savePageBtn.textContent = "Save page changes", 1200);
+}
+
+// Load posts
 async function loadPosts() {
   const res = await fetch(`/.netlify/functions/getPosts?slug=${slug}`);
   if (!res.ok) return alert("Failed to load posts.");
+
   const posts = await res.json();
   postsDiv.innerHTML = "";
+
   posts.forEach(p => {
     const div = document.createElement("div");
     div.className = "post";
@@ -140,7 +182,6 @@ async function savePost() {
   count.textContent = "0 / 500";
   btn.textContent = "Save post";
 
-  // Reload posts
   await loadPosts();
   btn.disabled = true;
 }
