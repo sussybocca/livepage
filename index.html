@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>LivePage — Create a Page</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -25,11 +26,16 @@
     h1 { margin-top: 0; font-size: 1.5rem; }
     label { display: block; margin-top: 16px; font-size: 0.9rem; opacity: 0.9; }
     input, select, button {
-      width: 100%; margin-top: 6px; padding: 10px; border-radius: 8px; border: none; font-size: 1rem;
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
     }
     input, select { background: #0f1115; color: white; }
     button { background: #4f7cff; color: white; cursor: pointer; margin-top: 20px; }
-    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     .preview { margin-top: 12px; font-size: 0.85rem; color: #9aa4ff; word-break: break-all; }
     .status { margin-top: 10px; font-size: 0.85rem; min-height: 1em; }
     .error { color: #ff6b6b; }
@@ -66,7 +72,11 @@
 
 <script>
 function generateSlug(title) {
-  const clean = title.toLowerCase().replace(/[^a-z0-9 ]+/g, "").trim();
+  const clean = title
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, "")
+    .trim();
+
   const spaces = (clean.match(/ /g) || []).length;
   if (spaces === 0) return clean;
   if (spaces === 1) return clean.replace(" ", "-");
@@ -76,13 +86,16 @@ function generateSlug(title) {
 function updateSlug() {
   const title = document.getElementById("title").value;
   const slug = generateSlug(title);
-  document.getElementById("slugPreview").innerText = "URL: /l/" + (slug || "");
+  document.getElementById("slugPreview").innerText =
+    "URL: /l/" + (slug || "");
 }
 
 async function createPage() {
   const title = document.getElementById("title").value.trim();
   const contentType = document.getElementById("contentType").value;
   const usageType = document.getElementById("usageType").value;
+  const slug = generateSlug(title);
+
   const status = document.getElementById("status");
   const btn = document.getElementById("createBtn");
 
@@ -101,29 +114,37 @@ async function createPage() {
   try {
     const res = await fetch("/.netlify/functions/createPage", {
       method: "POST",
-      body: JSON.stringify({ title, contentType, usageType })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        slug,
+        contentType,
+        usageType
+      })
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
 
-    if (!res.ok) {
-      // Show detailed error from Supabase
-      const message = data?.error || data?.message || "Unknown error";
-      status.textContent = "Error creating page: " + message;
-      status.classList.add("error");
-      btn.disabled = false;
-      btn.textContent = "Create Page";
-      return;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Invalid server response: " + text);
     }
 
-    status.textContent = "Page created!";
+    if (!res.ok) {
+      throw new Error(data.error || data.message || "Unknown error");
+    }
+
+    status.textContent = "Page created! Redirecting to editor…";
     status.classList.add("success");
 
-    // Redirect to the live page
-    window.location.href = data.url;
+    // ✅ FIXED REDIRECT — editor.html now actually works
+    window.location.href =
+      "/editor.html?slug=" + encodeURIComponent(slug);
 
   } catch (err) {
-    status.textContent = "Function error: " + err.message;
+    status.textContent = "Error creating page: " + err.message;
     status.classList.add("error");
     btn.disabled = false;
     btn.textContent = "Create Page";
