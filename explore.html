@@ -47,6 +47,20 @@
     .card small {
       color: #9aa4ff;
     }
+    .card button {
+      margin-top: 6px;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #6bff95;
+      color: #000;
+      font-weight: bold;
+    }
+    .card button.view {
+      background: #4f7cff;
+      color: #fff;
+    }
     select {
       margin: 16px;
       padding: 8px;
@@ -113,6 +127,14 @@ async function loadPages() {
       const info = document.createElement("small");
       info.textContent = `${page.content_type} · ${page.usage_type} · ${page.category}`;
       card.appendChild(info);
+
+      // Add Edit button
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "Edit this page";
+      editBtn.onclick = () => {
+        window.location.href = "/editor.html?slug=" + encodeURIComponent(page.slug);
+      };
+      card.appendChild(editBtn);
 
       container.appendChild(card);
     }
