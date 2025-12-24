@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// YOUR custom slug logic
+// Custom slug logic
 function generateSlug(title) {
   const clean = title
     .toLowerCase()
@@ -14,50 +14,65 @@ function generateSlug(title) {
 
   const spaceCount = (clean.match(/ /g) || []).length;
 
-  if (spaceCount === 0) {
-    // no spaces → fivenightsatfredies
-    return clean;
-  }
-
-  if (spaceCount === 1) {
-    // one space → five-nights
-    return clean.replace(" ", "-");
-  }
-
-  // two or more spaces → five_nights_at_freddies
+  if (spaceCount === 0) return clean;
+  if (spaceCount === 1) return clean.replace(" ", "-");
   return clean.replace(/ /g, "_");
 }
 
 export async function handler(event) {
-  const { title, contentType, usageType } = JSON.parse(event.body);
+  try {
+    const { title, contentType, usageType } = JSON.parse(event.body);
 
-  if (!title) {
+    if (!title || !contentType || !usageType) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing required fields: title, contentType, or usageType" })
+      };
+    }
+
+    const slug = generateSlug(title);
+
+    const { data, error } = await supabase
+      .from("pages")
+      .insert({
+        title,
+        slug,
+        content_type: contentType,
+        usage_type: usageType
+      })
+      .select();
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          error: "Supabase insert failed",
+          message: error.message,
+          details: error.details || null,
+          hint: error.hint || null,
+          code: error.code || null
+        })
+      };
+    }
+
     return {
-      statusCode: 400,
-      body: "Title is required"
+      statusCode: 200,
+      body: JSON.stringify({
+        url: `/l/${slug}`,
+        page: data[0]
+      })
     };
-  }
 
-  const slug = generateSlug(title);
-
-  const { error } = await supabase.from("pages").insert({
-    title,
-    slug,
-    content_type: contentType,
-    usage_type: usageType
-  });
-
-  if (error) {
+  } catch (err) {
+    console.error("Function execution error:", err);
     return {
       statusCode: 500,
-      body: error.message
+      body: JSON.stringify({
+        error: "Function failed",
+        message: err.message,
+        stack: err.stack
+      })
     };
   }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      url: `/l/${slug}`
-    })
-  };
 }
