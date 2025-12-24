@@ -102,13 +102,11 @@ function updateSlug() {
     "URL: /l/" + generateSlug(title);
 }
 
-// Dummy function for getting Google OAuth code; replace with real popup / redirect flow
-async function getGoogleOAuthCode() {
-  // You would normally open a popup or redirect to Google's OAuth consent screen here
-  // For demo purposes, returning null for family-friendly category
+// Replace dummy OAuth; now user enters Google email, checked by backend
+async function getGoogleEmail() {
   const category = document.getElementById("category").value;
   if (category === "18+") {
-    return prompt("Enter Google OAuth code for age verification (demo only)");
+    return prompt("Enter your Google email for age verification");
   }
   return null;
 }
@@ -141,12 +139,20 @@ async function createPage() {
   btn.textContent = "Creating…";
 
   try {
-    const googleToken = await getGoogleOAuthCode();
+    const googleEmail = await getGoogleEmail();
 
     const res = await fetch("/.netlify/functions/createPage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, contentType, usageType, category, content, imageUrl, googleToken })
+      body: JSON.stringify({
+        title,
+        contentType,
+        usageType,
+        category,
+        content,
+        imageUrl,
+        googleEmail
+      })
     });
 
     const raw = await res.text();
