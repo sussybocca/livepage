@@ -40,6 +40,9 @@
     .status { margin-top: 10px; font-size: 0.85rem; white-space: pre-wrap; }
     .error { color: #ff6b6b; }
     .success { color: #6bff95; }
+    .actions { margin-top: 16px; display: flex; gap: 8px; flex-direction: column; }
+    .actions button { background: #6bff95; color: #000; }
+    .actions button.view { background: #4f7cff; color: #fff; }
   </style>
 </head>
 <body>
@@ -66,6 +69,7 @@
 
   <div class="preview" id="slugPreview">URL: /l/</div>
   <div class="status" id="status"></div>
+  <div class="actions" id="actions" style="display:none;"></div>
 
   <button id="createBtn" onclick="createPage()">Create Page</button>
 </div>
@@ -93,9 +97,12 @@ async function createPage() {
 
   const status = document.getElementById("status");
   const btn = document.getElementById("createBtn");
+  const actions = document.getElementById("actions");
 
   status.textContent = "";
   status.className = "status";
+  actions.style.display = "none";
+  actions.innerHTML = "";
 
   if (!title) {
     status.textContent = "Please enter a page name";
@@ -115,10 +122,8 @@ async function createPage() {
 
     const raw = await res.text();
 
-    // 🔥 ALWAYS SHOW REAL ERROR — NO UNKNOWN ERROR POSSIBLE
     if (!res.ok) {
-      status.textContent =
-        "SERVER ERROR (" + res.status + "):\n\n" + raw;
+      status.textContent = "SERVER ERROR (" + res.status + "):\n\n" + raw;
       status.classList.add("error");
       btn.disabled = false;
       btn.textContent = "Create Page";
@@ -129,23 +134,34 @@ async function createPage() {
     try {
       data = JSON.parse(raw);
     } catch {
-      status.textContent =
-        "INVALID JSON FROM SERVER:\n\n" + raw;
+      status.textContent = "INVALID JSON FROM SERVER:\n\n" + raw;
       status.classList.add("error");
       btn.disabled = false;
       btn.textContent = "Create Page";
       return;
     }
 
-    status.textContent = "Page created! Redirecting to editor…";
+    status.textContent = "Page created successfully!";
     status.classList.add("success");
 
-    window.location.href =
-      "/editor.html?slug=" + encodeURIComponent(data.page.slug);
+    // ✅ Show actions: Edit in editor or view page
+    actions.style.display = "flex";
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit in editor.html";
+    editBtn.onclick = () => window.location.href = "/editor.html?slug=" + encodeURIComponent(data.page.slug);
+    actions.appendChild(editBtn);
+
+    const viewBtn = document.createElement("button");
+    viewBtn.textContent = "View your page";
+    viewBtn.classList.add("view");
+    viewBtn.onclick = () => window.location.href = "/l/" + encodeURIComponent(data.page.slug);
+    actions.appendChild(viewBtn);
+
+    btn.disabled = false;
+    btn.textContent = "Create Another Page";
 
   } catch (err) {
-    status.textContent =
-      "FETCH FAILED:\n\n" + err.message;
+    status.textContent = "FETCH FAILED:\n\n" + err.message;
     status.classList.add("error");
     btn.disabled = false;
     btn.textContent = "Create Page";
