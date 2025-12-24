@@ -20,7 +20,11 @@ function normalizeSlug(slug) {
 }
 
 export async function handler(event) {
-  const rawSlug = event.queryStringParameters.slug;
+  // Extract slug from query param OR from the path (Netlify :splat)
+  const rawSlug =
+    event.queryStringParameters?.slug ||
+    event.path?.split("/l/")[1]; // grabs everything after /l/
+
   if (!rawSlug) {
     return {
       statusCode: 400,
