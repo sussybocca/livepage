@@ -9,8 +9,8 @@
     "build": "echo \"No build step required\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.30.0"
-   "node-fetch": "^2.6.12"
+    "@supabase/supabase-js": "^2.30.0",
+    "node-fetch": "^2.6.12"
   },
   "devDependencies": {},
   "keywords": ["livepage", "supabase", "netlify"],
