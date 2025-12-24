@@ -1,5 +1,5 @@
 [[redirects]]
-  from = "/l/*"
-  to = "/.netlify/functions/getPage?slug=:splat"
-  status = 200
-  force = true
+from = "/l/*"
+to = "/.netlify/functions/getPage/:splat"
+status = 200
+force = true
