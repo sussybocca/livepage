@@ -102,21 +102,32 @@ textarea.addEventListener("input", () => {
   btn.disabled = textarea.value.trim().length === 0;
 });
 
-// Load page data + posts
 async function loadPage() {
   if (!slug) return alert("No page slug provided!");
 
   const pageRes = await fetch(`/.netlify/functions/getPage?slug=${slug}`);
   if (!pageRes.ok) return alert("Failed to load page.");
 
-  const pageData = await pageRes.json();
+  const html = await pageRes.text();
 
-  pageTitle.textContent = pageData.page.title;
-  pageContentBox.value = pageData.page.content;
+  // Parse returned HTML
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  const titleEl = doc.querySelector("h1");
+  const metaEl = doc.querySelector(".meta");
+
+  if (!titleEl) {
+    alert("Failed to read page content.");
+    return;
+  }
+
+  pageTitle.textContent = titleEl.textContent;
+  pageContentBox.value = metaEl ? metaEl.textContent.trim() : "";
   viewLink.href = `/l/${slug}`;
 
   await loadPosts();
 }
+
 
 // Save page content updates
 async function savePage() {
