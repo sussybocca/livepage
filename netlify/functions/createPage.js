@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Custom slug logic
+// Slug generation function
 function generateSlug(title) {
   const clean = title
     .toLowerCase()
@@ -21,24 +21,28 @@ function generateSlug(title) {
 
 export async function handler(event) {
   try {
-    const { title, contentType, usageType } = JSON.parse(event.body);
+    const { title, contentType, usageType, content } = JSON.parse(event.body);
 
-    if (!title || !contentType || !usageType) {
+    if (!title || !contentType || !usageType || !content) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Missing required fields: title, contentType, or usageType" })
+        body: JSON.stringify({
+          error: "Missing required fields: title, contentType, usageType, or content"
+        })
       };
     }
 
     const slug = generateSlug(title);
 
+    // Insert page into Supabase
     const { data, error } = await supabase
       .from("pages")
       .insert({
         title,
         slug,
         content_type: contentType,
-        usage_type: usageType
+        usage_type: usageType,
+        content
       })
       .select();
 
@@ -59,6 +63,7 @@ export async function handler(event) {
     return {
       statusCode: 200,
       body: JSON.stringify({
+        message: "Page created successfully!",
         url: `/l/${slug}`,
         page: data[0]
       })
